@@ -1,0 +1,13 @@
+name: pedolgov
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy>=1.26
+  - scipy>=1.11
+  - pytorch>=2.2
+  - pyyaml>=6
+  - pip
+  - pip:
+      - msgspec>=0.18
+      - cyclopts>=3

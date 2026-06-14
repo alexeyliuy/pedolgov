@@ -1,0 +1,4 @@
+inference:
+  backbone: qwen2_72b
+  max_input_tokens: 4096
+  max_output_tokens: 2048

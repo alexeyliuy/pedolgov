@@ -1,0 +1,3 @@
+name: ablation_no_kg
+ablation:
+  use_kg: false

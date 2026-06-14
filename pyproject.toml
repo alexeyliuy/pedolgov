@@ -1,0 +1,79 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pedolgov"
+version = "0.1.0"
+description = "Evidence synthesis, ordinal risk stratification, conformal calibration and guardrail governance for pediatric off-label prescribing"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+  { name = "Ping Yu" },
+  { name = "Lingjiao Feng" },
+  { name = "Kedeng Qiu" },
+  { name = "Mengquan Zhu" },
+]
+keywords = ["pediatric pharmacology", "off-label", "risk stratification", "conformal prediction", "clinical governance"]
+dependencies = [
+  "numpy>=1.26,<3",
+  "scipy>=1.11",
+  "torch>=2.2",
+  "msgspec>=0.18",
+  "cyclopts>=3",
+  "pyyaml>=6",
+]
+
+[project.optional-dependencies]
+retrieval = ["faiss-cpu>=1.7", "sentence-transformers>=2.2"]
+serve = ["vllm>=0.5", "transformers>=4.42", "accelerate>=0.30"]
+api = ["openai>=1.30", "anthropic>=0.30"]
+dev = ["pytest>=8", "ruff>=0.5", "mypy>=1.10", "black>=24", "isort>=5", "pre-commit>=3"]
+
+[project.scripts]
+pedolgov = "pedolgov.gateway.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["pedolgov*"]
+
+[tool.setuptools.package-data]
+pedolgov = ["py.typed"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["pedolgov"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "C4"]
+ignore = ["B008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["pedolgov"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["pedolgov"]
+plugins = []
+
+[[tool.mypy.overrides]]
+module = ["faiss.*", "sentence_transformers.*", "vllm.*", "transformers.*", "openai.*", "anthropic.*", "scipy.*", "yaml.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pedolgov.valuation.fitting"
+disallow_untyped_calls = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

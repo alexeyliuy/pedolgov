@@ -1,0 +1,9 @@
+signal:
+  prr_min: 2.0
+  chi2_min: 4.0
+  ror_ci_min: 1.0
+  consensus_min: 3
+retrieval:
+  chunk_size: 512
+  overlap: 64
+  top_k: 10

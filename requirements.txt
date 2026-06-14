@@ -1,0 +1,6 @@
+numpy>=1.26,<3
+scipy>=1.11
+torch>=2.2
+msgspec>=0.18
+cyclopts>=3
+pyyaml>=6

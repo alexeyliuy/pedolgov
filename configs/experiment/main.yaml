@@ -1,0 +1,55 @@
+name: main
+seeds: [42, 123, 456, 789, 1024]
+retrieval:
+  chunk_size: 512
+  overlap: 64
+  top_k: 10
+  encoder: hash
+  dim: 256
+signal:
+  prr_min: 2.0
+  chi2_min: 4.0
+  ror_ci_min: 1.0
+  consensus_min: 3
+inference:
+  backbone: offline
+  temperature_extract: 0.1
+  temperature_summary: 0.3
+  max_input_tokens: 4096
+  max_output_tokens: 2048
+risk:
+  n_factors: 8
+  weight_cap: 0.25
+  thresholds: [0.2, 0.38, 0.58, 0.78]
+fit:
+  learning_rate: 0.05
+  steps: 300
+  weight_decay: 0.0
+  kappa_grid: 41
+conformal:
+  alpha: 0.10
+  set_size_target: 3
+  calibration_sizes: [50, 100, 200, 500]
+  ood_percentile: 95.0
+governance:
+  large_set_threshold: 4
+  hitl_on_critical: true
+  hitl_on_large_set: true
+  hitl_on_hard_guardrail: true
+  hitl_on_neonate: true
+bench:
+  n_items: 1847
+  n_drugs: 187
+  n_indications: 94
+  n_classes: 15
+  train_frac: 0.4
+  calibration_frac: 0.2
+  test_frac: 0.4
+ablation:
+  use_rag: true
+  use_multi_source: true
+  use_conformal: true
+  use_governance: true
+  use_grading: true
+  use_kg: true
+  shuffle_inputs: false

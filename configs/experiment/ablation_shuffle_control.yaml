@@ -1,0 +1,3 @@
+name: ablation_shuffle_control
+ablation:
+  shuffle_inputs: true

@@ -1,0 +1,3 @@
+name: supplementary_s1_temperature
+inference:
+  temperature_extract: 0.7

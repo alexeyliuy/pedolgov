@@ -1,0 +1,8 @@
+bench:
+  n_items: 1847
+  n_drugs: 187
+  n_indications: 94
+  n_classes: 15
+  train_frac: 0.4
+  calibration_frac: 0.2
+  test_frac: 0.4

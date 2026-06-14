@@ -1,0 +1,3 @@
+name: ablation_no_governance
+ablation:
+  use_governance: false

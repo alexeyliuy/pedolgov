@@ -1,0 +1,13 @@
+fit:
+  learning_rate: 0.05
+  steps: 300
+  weight_decay: 0.0
+  kappa_grid: 41
+risk:
+  weight_cap: 0.25
+  thresholds: [0.2, 0.38, 0.58, 0.78]
+conformal:
+  alpha: 0.10
+  set_size_target: 3
+  calibration_sizes: [50, 100, 200, 500]
+  ood_percentile: 95.0

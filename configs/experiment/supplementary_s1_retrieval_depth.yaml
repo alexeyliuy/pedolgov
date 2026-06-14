@@ -1,0 +1,3 @@
+name: supplementary_s1_retrieval_depth
+retrieval:
+  top_k: 20

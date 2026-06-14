@@ -1,0 +1,3 @@
+name: ablation_no_rag
+ablation:
+  use_rag: false

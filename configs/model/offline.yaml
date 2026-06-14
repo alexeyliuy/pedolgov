@@ -1,0 +1,4 @@
+inference:
+  backbone: offline
+  temperature_extract: 0.1
+  temperature_summary: 0.3
