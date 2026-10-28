@@ -9,12 +9,6 @@ description = "Evidence synthesis, ordinal risk stratification, conformal calibr
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
-authors = [
-  { name = "Ping Yu" },
-  { name = "Lingjiao Feng" },
-  { name = "Kedeng Qiu" },
-  { name = "Mengquan Zhu" },
-]
 keywords = ["pediatric pharmacology", "off-label", "risk stratification", "conformal prediction", "clinical governance"]
 dependencies = [
   "numpy>=1.26,<3",

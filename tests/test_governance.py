@@ -20,7 +20,7 @@ def test_recommendation_mapping() -> None:
     assert release.recommendation == "release" and not release.human_review
 
     warn = module.govern(RiskTier.HIGH, {3}, [], [], AgeGroup.CHILD)
-    assert warn.recommendation == "warn"
+    assert warn.recommendation == "warn" and warn.human_review
 
     defer = module.govern(RiskTier.CRITICAL, {4}, [], [], AgeGroup.CHILD)
     assert defer.recommendation == "defer" and defer.human_review

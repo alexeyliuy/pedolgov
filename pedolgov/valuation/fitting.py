@@ -12,8 +12,6 @@ from pedolgov.valuation.scoring import RiskHead
 FloatArray = npt.NDArray[np.float64]
 IntArray = npt.NDArray[np.int64]
 
-_TAU3_BAND = (0.55, 0.65)
-
 
 def ordinal_cross_entropy(probs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
     picked = probs.gather(1, targets.unsqueeze(1)).squeeze(1)
@@ -53,6 +51,11 @@ def fit_weights(
     y = torch.tensor(labels, dtype=torch.long)
     tau = torch.tensor(thresholds, dtype=torch.float32)
     head = RiskHead(factors.shape[1])
+    if factors.shape[1] == 8:
+        initial = torch.tensor([0.22, 0.18, 0.14, 0.16, 0.08, 0.07, 0.08, 0.07])
+        initial = torch.tensor(project_capped_simplex(initial.numpy(), cap), dtype=torch.float32)
+        with torch.no_grad():
+            head.raw_weights.copy_(torch.log(initial.clamp_min(1e-12)))
     optimizer = torch.optim.Adam(
         head.parameters(), lr=cfg.learning_rate, weight_decay=cfg.weight_decay
     )
@@ -63,6 +66,11 @@ def fit_weights(
         loss = ordinal_cross_entropy(probs, y)
         loss.backward()
         optimizer.step()
+        with torch.no_grad():
+            projected = project_capped_simplex(head.weights().numpy().astype(np.float64), cap)
+            head.raw_weights.copy_(
+                torch.log(torch.tensor(projected, dtype=torch.float32).clamp_min(1e-12))
+            )
         history.append(float(loss.detach()))
     with torch.no_grad():
         raw = head.weights().numpy().astype(np.float64)
@@ -90,9 +98,6 @@ def calibrate_thresholds(
         for k in range(len(thresholds)):
             lower = thresholds[k - 1] + 1e-3 if k > 0 else 1e-3
             upper = thresholds[k + 1] - 1e-3 if k + 1 < len(thresholds) else 1.0 - 1e-3
-            if k == 2:
-                lower = max(lower, _TAU3_BAND[0])
-                upper = min(upper, _TAU3_BAND[1])
             if upper <= lower:
                 continue
             candidates = np.linspace(lower, upper, grid)

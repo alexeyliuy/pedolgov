@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import msgspec
 import numpy as np
 import numpy.typing as npt
 
@@ -13,13 +12,13 @@ from pedolgov.bond.conformal import (
     average_set_size,
     empirical_coverage,
 )
-from pedolgov.broker.backend import ExtractionPlan, OfflineReasoner, build_backbone
+from pedolgov.broker.backend import build_backbone
 from pedolgov.clearance.governance import GovernanceModule
 from pedolgov.clearance.pipeline import GovernedPipeline
 from pedolgov.inspection.hard import HardGuardrails
 from pedolgov.inspection.soft import SoftGuardrails
 from pedolgov.lanes.fusion import EvidenceSynthesisEngine
-from pedolgov.manifest.config import Ablation, Config, SignalConfig
+from pedolgov.manifest.config import Ablation, Config
 from pedolgov.records.ledger import Ledger
 from pedolgov.valuation.assignment import as_thresholds
 from pedolgov.valuation.factors import factor_vector
@@ -109,9 +108,9 @@ def evaluate_risk(pipeline: GovernedPipeline, bench: PedOLBench) -> dict[str, fl
     run = run_test(pipeline, bench.subset("test"))
     binary = (run.y_true >= 3).astype(np.int64)
     return {
-        "weighted_f1": metrics.macro_f1(run.y_true, run.y_pred),
+        "macro_f1": metrics.macro_f1(run.y_true, run.y_pred),
         "auroc": metrics.auroc(run.risks, binary),
-        "spearman_rho": metrics.spearman_rho(run.risks, run.y_true.astype(np.float64)),
+        "risk_label_spearman_rho": metrics.spearman_rho(run.risks, run.y_true.astype(np.float64)),
         "ece": metrics.expected_calibration_error(run.probs, run.y_true),
         "coverage": empirical_coverage(run.sets, run.y_true),
         "set_size": average_set_size(run.sets),
@@ -119,27 +118,6 @@ def evaluate_risk(pipeline: GovernedPipeline, bench: PedOLBench) -> dict[str, fl
         "ordinal_mae": metrics.ordinal_mae(run.y_true, run.y_pred),
         "accuracy": metrics.ordinal_accuracy(run.y_true, run.y_pred),
     }
-
-
-def evaluate_extraction(bench: PedOLBench, config: Config, ablation: Ablation) -> dict[str, float]:
-    reasoner = OfflineReasoner()
-    grounded = ExtractionPlan(
-        grounded=True, use_grading=True, use_kg=True, use_multi_source=True, signal=SignalConfig()
-    )
-    plan = ExtractionPlan(
-        grounded=ablation.use_rag,
-        use_grading=ablation.use_grading,
-        use_kg=ablation.use_kg,
-        use_multi_source=ablation.use_multi_source,
-        signal=config.signal,
-    )
-    truth, pred = [], []
-    for item in bench.subset("test"):
-        ref = reasoner.reason(item.sources, item.query, grounded)
-        hyp = reasoner.reason(item.sources, item.query, plan)
-        truth.append(1 if ref.disproportionality_consensus >= 0.5 else 0)
-        pred.append(1 if hyp.disproportionality_consensus >= 0.5 else 0)
-    return {"extraction_f1": metrics.macro_f1(np.asarray(truth), np.asarray(pred), n=2)}
 
 
 def evaluate_conformal(pipeline: GovernedPipeline, bench: PedOLBench) -> dict[str, float]:
@@ -154,14 +132,11 @@ def evaluate_conformal(pipeline: GovernedPipeline, bench: PedOLBench) -> dict[st
 def evaluate_governance(pipeline: GovernedPipeline, bench: PedOLBench) -> dict[str, float]:
     items = bench.subset("test")
     review = 0
-    halluc = 0
     for item in items:
         result = pipeline.clear(item.sources, item.query)
         review += int(result.decision.human_review)
-        halluc += int(result.summary.hallucinated_claims > 0)
     n = max(1, len(items))
     return {
-        "hallucination_rate": halluc / n,
         "hitl_rate": review / n,
     }
 
@@ -178,36 +153,7 @@ def evaluate_end_to_end(pipeline: GovernedPipeline, bench: PedOLBench) -> dict[s
         covered += int(result.decision.recommendation != "defer")
     n = max(1, len(items))
     return {
-        "task_accuracy": correct / n,
-        "safety": safe / n,
-        "coverage": covered / n,
+        "risk_classification_accuracy": correct / n,
+        "no_hard_flags_rate": safe / n,
+        "response_rate": covered / n,
     }
-
-
-_ABLATIONS = {
-    "full": Ablation(),
-    "no_rag": Ablation(use_rag=False),
-    "single_source": Ablation(use_multi_source=False),
-    "no_conformal": Ablation(use_conformal=False),
-    "no_governance": Ablation(use_governance=False),
-    "no_grading": Ablation(use_grading=False),
-    "no_kg": Ablation(use_kg=False),
-}
-
-
-def ablation_table(config: Config, seed: int) -> dict[str, dict[str, float]]:
-    table: dict[str, dict[str, float]] = {}
-    for name, ablation in _ABLATIONS.items():
-        variant = msgspec.structs.replace(config, ablation=ablation)
-        bench = PedOLBench.build(variant.bench, seed)
-        pipeline = fit_pipeline(bench, variant)
-        risk = evaluate_risk(pipeline, bench)
-        extraction = evaluate_extraction(bench, variant, ablation)
-        gov = evaluate_governance(pipeline, bench)
-        table[name] = {
-            "gov_accuracy": risk["accuracy"],
-            "extraction_f1": extraction["extraction_f1"],
-            "risk_auc": risk["auroc"],
-            "hallucination_rate": gov["hallucination_rate"],
-        }
-    return table

@@ -47,10 +47,19 @@ class GovernanceModule:
         soft_flags: list[str],
         age: AgeGroup,
     ) -> Decision:
-        review = requires_human_review(
+        review = tier == RiskTier.HIGH or requires_human_review(
             tier, prediction_set, hard_flags, age, self.set_size_target, self.cfg
         )
-        if review:
+        if (
+            review
+            and tier == RiskTier.HIGH
+            and not requires_human_review(
+                tier, prediction_set, hard_flags, age, self.set_size_target, self.cfg
+            )
+        ):
+            recommendation = "warn"
+            rationale = "pharmacist review required before dispensing"
+        elif review:
             recommendation = "defer"
             rationale = "mandatory clinical review"
         elif soft_flags or tier >= RiskTier.HIGH:

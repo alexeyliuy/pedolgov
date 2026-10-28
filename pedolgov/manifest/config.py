@@ -12,7 +12,7 @@ class RetrievalConfig(msgspec.Struct, frozen=True):
     chunk_size: int = 512
     overlap: int = 64
     top_k: int = 10
-    encoder: str = "hash"
+    encoder: str = "facebook/contriever"
     dim: int = 256
 
 
@@ -21,10 +21,11 @@ class SignalConfig(msgspec.Struct, frozen=True):
     chi2_min: float = 4.0
     ror_ci_min: float = 1.0
     consensus_min: int = 3
+    eb_prior: tuple[float, float, float, float, float] | None = None
 
 
 class InferenceConfig(msgspec.Struct, frozen=True):
-    backbone: str = "offline"
+    backbone: str = "llama_70b"
     temperature_extract: float = 0.1
     temperature_summary: float = 0.3
     max_input_tokens: int = 4096
@@ -60,6 +61,7 @@ class GovernanceConfig(msgspec.Struct, frozen=True):
 
 
 class BenchConfig(msgspec.Struct, frozen=True):
+    path: str = ""
     n_items: int = 1847
     n_drugs: int = 187
     n_indications: int = 94

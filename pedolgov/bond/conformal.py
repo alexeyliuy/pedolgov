@@ -19,7 +19,9 @@ def conformal_quantile(scores: FloatArray, alpha: float) -> float:
     if n == 0:
         return 1.0
     rank = int(np.ceil((n + 1) * (1.0 - alpha)))
-    rank = min(max(rank, 1), n)
+    if rank > n:
+        return 1.0
+    rank = max(rank, 1)
     ordered = np.sort(scores)
     return float(ordered[rank - 1])
 

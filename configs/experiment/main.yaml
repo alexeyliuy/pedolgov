@@ -4,7 +4,7 @@ retrieval:
   chunk_size: 512
   overlap: 64
   top_k: 10
-  encoder: hash
+  encoder: facebook/contriever
   dim: 256
 signal:
   prr_min: 2.0
@@ -12,7 +12,7 @@ signal:
   ror_ci_min: 1.0
   consensus_min: 3
 inference:
-  backbone: offline
+  backbone: llama_70b
   temperature_extract: 0.1
   temperature_summary: 0.3
   max_input_tokens: 4096
@@ -38,6 +38,7 @@ governance:
   hitl_on_hard_guardrail: true
   hitl_on_neonate: true
 bench:
+  path: data/pedolbench.json
   n_items: 1847
   n_drugs: 187
   n_indications: 94

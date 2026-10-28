@@ -29,6 +29,8 @@ class LabelSections:
     dose_min: float
     dose_max: float
     off_label_category: str
+    passages: tuple[str, ...] = ()
+    set_id: str = ""
 
 
 @dataclass(frozen=True)
@@ -48,6 +50,7 @@ class Abstract:
     design: str
     pediatric: bool
     pmid: str
+    text: str = ""
 
 
 @dataclass(frozen=True)
@@ -57,6 +60,9 @@ class KgNeighborhood:
     narrow_therapeutic_index: bool
     on_kids_list: bool
     contraindicated_with_context: bool
+    triples: tuple[str, ...] = ()
+    interactions: tuple[str, ...] = ()
+    drugbank_name: str = ""
 
 
 @dataclass(frozen=True)
