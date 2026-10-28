@@ -40,6 +40,30 @@ Access to individual resources may be subject to their respective licenses and t
 
 The study describes open-source language model backbones including Llama 3.1-70B, Qwen2-72B, and Mixtral-8x7B, alongside commercial comparison models. The research evaluation reports use of vLLM with NVIDIA A100 GPUs for open-source models. Computational performance and costs depend on the model, hardware, data, and deployment configuration.
 
+## Results reported in the study
+
+The manuscript reports the following endpoints for the Llama 3.1-70B configuration. These values are presented for reference and have not been independently reproduced from the materials in this repository.
+
+| Endpoint | Reported result |
+|---|---|
+| Evidence extraction F1 | 0.893 ± 0.018 |
+| Risk AUROC (High and Critical vs. other categories) | 0.806 ± 0.019 |
+| Spearman correlation with pediatric FAERS signals | 0.667 ± 0.030 |
+| Conformal coverage at α = 0.10 | 0.911 ± 0.018 |
+| Average prediction-set size | 2.41 ± 0.20 |
+| Hallucination rate before and after governance | 0.187 → 0.062 |
+| End-to-end task accuracy | 0.847 ± 0.018 |
+
+## Computational performance reported in the study
+
+| Backbone | Reported hardware | Latency | Throughput | Cost per 1,000 queries |
+|---|---|---|---|---|
+| Llama 3.1-70B | 4 × NVIDIA A100 80GB | 892 ms/query | 67.3 queries/min | $4.30 |
+| Qwen2-72B | 4 × NVIDIA A100 80GB | 918 ms/query | 65.4 queries/min | $4.63 |
+| Mixtral-8x7B | 4 × NVIDIA A100 80GB | 524 ms/query | 114.5 queries/min | $2.51 |
+
+The manuscript reports an approximately 34 ms per query governance overhead and under 2 ms per query for conformal prediction. These are study-reported measurements, not guarantees for other deployments.
+
 ## Installation and quality checks
 
 Python 3.11 or newer is required. Install the package with:
