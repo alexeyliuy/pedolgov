@@ -201,3 +201,19 @@ def prepare_knowledge(drugbank: str, primekg: str, curation: str, drug: str, out
         curated["narrow_index"],
     )
     Path(output).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
+
+
+@app.command
+def classify_references(input: str, output: str) -> None:
+    from pedolgov.classification.labels import LabelEvidence, classify_reference
+
+    rows = json.loads(Path(input).read_text(encoding="utf-8"))
+    if not isinstance(rows, list):
+        raise ValueError("input must be a JSON array")
+    results = []
+    for row in rows:
+        tier, rule = classify_reference(LabelEvidence(**row["reference_evidence"]))
+        results.append({**row, "ground_truth": tier.label, "label_rule": rule})
+    Path(output).write_text(
+        json.dumps(results, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )

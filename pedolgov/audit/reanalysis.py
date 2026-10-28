@@ -14,7 +14,7 @@ def reanalyze(config: Config, output: Path) -> None:
     for seed in config.seeds:
         set_seed(seed)
         bench = PedOLBench.build(config.bench, seed)
-        pipeline = fit_pipeline(bench, config)
+        pipeline = fit_pipeline(bench, config, seed)
         rows = []
         for index in bench.splits["test"]:
             item = bench.items[index]
@@ -35,6 +35,16 @@ def reanalyze(config: Config, output: Path) -> None:
                     "recommendation": result.decision.recommendation,
                     "human_review": result.decision.human_review,
                     "hard_flags": list(result.decision.hard_flags),
+                    "soft_flags": list(result.decision.soft_flags),
+                    "evidence": [
+                        {
+                            "source": item.source,
+                            "grade": item.grade.label,
+                            "statement": item.statement,
+                            "citation": item.citation,
+                        }
+                        for item in result.summary.items
+                    ],
                 }
             )
         record = {

@@ -22,11 +22,15 @@ class PromptParts:
         return "\n\n".join([self.system, self.context, self.instruction, self.directive])
 
 
-def build_prompt(query: Query, items: tuple[EvidenceItem, ...], instruction: str) -> PromptParts:
+def build_prompt(
+    query: Query, items: tuple[EvidenceItem, ...], instruction: str, extra_context: str = ""
+) -> PromptParts:
     lines = [
         f"[{item.source} | {item.grade.label} | {item.citation}] {item.statement}" for item in items
     ]
     context = "Retrieved evidence:\n" + ("\n".join(lines) if lines else "none")
+    if extra_context:
+        context += "\n\nStructured source data:\n" + extra_context
     directive = "Think step by step about the evidence before stating a calibrated risk category."
     return PromptParts(
         system=_SYSTEM,

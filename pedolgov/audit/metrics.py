@@ -43,14 +43,16 @@ def ordinal_mae(y_true: IntArray, y_pred: IntArray) -> float:
 
 
 def auroc(scores: FloatArray, labels: IntArray) -> float:
-    order = np.argsort(scores)
-    ranks = np.empty_like(order, dtype=np.float64)
-    ranks[order] = np.arange(1, len(scores) + 1)
+    if len(scores) != len(labels) or not np.isfinite(scores).all():
+        raise ValueError("scores and labels must have equal lengths and finite values")
+    if not np.isin(labels, [0, 1]).all():
+        raise ValueError("AUROC labels must be binary")
+    ranks = _rankdata(scores) + 1.0
     pos = labels == 1
     n_pos = int(pos.sum())
     n_neg = len(labels) - n_pos
     if n_pos == 0 or n_neg == 0:
-        return 0.5
+        raise ValueError("AUROC requires both classes")
     sum_pos = ranks[pos].sum()
     return float((sum_pos - n_pos * (n_pos + 1) / 2) / (n_pos * n_neg))
 

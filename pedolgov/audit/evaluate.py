@@ -41,11 +41,12 @@ def extract_features(
     return np.asarray(rows, dtype=np.float64), np.asarray(labels, dtype=np.int64)
 
 
-def fit_pipeline(bench: PedOLBench, config: Config) -> GovernedPipeline:
+def fit_pipeline(bench: PedOLBench, config: Config, seed: int | None = None) -> GovernedPipeline:
     backbone = build_backbone(
         config.inference.backbone,
         config.inference.max_input_tokens,
         config.inference.max_output_tokens,
+        seed if seed is not None else config.seeds[0],
     )
     engine = EvidenceSynthesisEngine(config=config, backbone=backbone)
     train = bench.subset("train")

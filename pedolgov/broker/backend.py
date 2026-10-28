@@ -5,6 +5,7 @@ import os
 from dataclasses import asdict, dataclass, replace
 from typing import Protocol
 
+from pedolgov.broker.prompts import build_prompt
 from pedolgov.classification.hierarchy import (
     grade_label_statement,
     grade_pharmacovigilance,
@@ -136,8 +137,6 @@ class ModelBackbone:
         raise NotImplementedError
 
     def reason(self, sources: RawSources, query: Query, plan: ExtractionPlan) -> EvidenceSummary:
-        if not plan.grounded:
-            raise ValueError("This backend requires source evidence")
         base = EvidenceProcessor().reason(sources, query, plan)
         context = {
             "query": {
@@ -149,17 +148,17 @@ class ModelBackbone:
             "label": {
                 "drug": sources.label.drug,
                 "set_id": sources.label.set_id,
-                "passages": sources.label.passages,
+                "passages": sources.label.passages if plan.grounded else (),
             },
             "faers_contingency": asdict(sources.contingency),
             "literature": [asdict(a) for a in sources.abstracts] if plan.use_multi_source else [],
             "knowledge": asdict(sources.kg) if plan.use_kg else None,
         }
-        allowed = {
-            f"DailyMed:{sources.label.set_id or sources.label.drug}",
-            f"FAERS:{query.query_id}",
-        }
-        allowed.update(f"PubMed:{a.pmid}" for a in sources.abstracts)
+        allowed = {f"FAERS:{query.query_id}"}
+        if plan.grounded:
+            allowed.add(f"DailyMed:{sources.label.set_id or sources.label.drug}")
+        if plan.use_multi_source:
+            allowed.update(f"PubMed:{a.pmid}" for a in sources.abstracts)
         if plan.use_kg:
             if sources.kg.drugbank_name:
                 allowed.add(f"DrugBank:{sources.kg.drugbank_name}")
@@ -173,11 +172,17 @@ class ModelBackbone:
             + ". Evidence grading: A pediatric randomized trial; "
             "B observational study or consensus pharmacovigilance signal; C case report or "
             "regulatory label; D expert opinion or adult extrapolation; E no direct evidence. "
-            "Context: " + json.dumps(context, ensure_ascii=False)
+            "Use the source data supplied in the context."
+        )
+        prompt_items = tuple(
+            item for item in base.items if plan.grounded or item.source != "DailyMed"
+        )
+        parts = build_prompt(
+            query, prompt_items, instruction, json.dumps(context, ensure_ascii=False)
         )
         raw = self._generate(
-            "You are a pediatric drug-safety analyst. Ground every claim in the supplied evidence.",
-            instruction,
+            parts.system,
+            "\n\n".join((parts.context, parts.instruction, parts.directive)),
             plan.temperature,
         )
         try:
@@ -226,12 +231,15 @@ class ModelBackbone:
 class VllmBackbone(ModelBackbone):
     name = "vllm"
 
-    def __init__(self, model: str, max_input_tokens: int, max_output_tokens: int) -> None:
+    def __init__(
+        self, model: str, max_input_tokens: int, max_output_tokens: int, seed: int
+    ) -> None:
         try:
             import vllm
         except ImportError as exc:
             raise RuntimeError("vllm is not installed; install the 'serve' extra") from exc
         self._vllm = vllm
+        self.seed = seed
         self._llm = vllm.LLM(
             model=model,
             max_model_len=max_input_tokens + max_output_tokens,
@@ -241,7 +249,7 @@ class VllmBackbone(ModelBackbone):
 
     def _generate(self, system: str, prompt: str, temperature: float) -> str:
         params = self._vllm.SamplingParams(
-            temperature=temperature, max_tokens=self.max_output_tokens
+            temperature=temperature, max_tokens=self.max_output_tokens, seed=self.seed
         )
         result = self._llm.chat(
             [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
@@ -295,7 +303,7 @@ class ApiBackbone(ModelBackbone):
 
 
 def build_backbone(
-    name: str, max_input_tokens: int = 4096, max_output_tokens: int = 2048
+    name: str, max_input_tokens: int = 4096, max_output_tokens: int = 2048, seed: int = 42
 ) -> Backbone:
     models = {
         "llama_70b": "meta-llama/Meta-Llama-3.1-70B-Instruct",
@@ -303,9 +311,9 @@ def build_backbone(
         "mixtral_8x7b": "mistralai/Mixtral-8x7B-Instruct-v0.1",
     }
     if name in models:
-        return VllmBackbone(models[name], max_input_tokens, max_output_tokens)
+        return VllmBackbone(models[name], max_input_tokens, max_output_tokens, seed)
     if name.startswith("vllm:"):
-        return VllmBackbone(name[5:], max_input_tokens, max_output_tokens)
+        return VllmBackbone(name[5:], max_input_tokens, max_output_tokens, seed)
     if name.startswith("api:"):
         _, provider, model = name.split(":", 2)
         return ApiBackbone(provider, model, max_output_tokens)
